@@ -2,6 +2,7 @@
 // api/data-dashboard.php
 require_once '../config/app.php';
 require_once '../config/database.php';
+require_once '../includes/helpers.php';
 require_once '../includes/auth.php';
 
 header('Content-Type: application/json');
@@ -74,7 +75,11 @@ $radar_data = [
 $tabel_perbandingan = [];
 
 if ($periode_id) {
-    // Ambil semua kategori kompetensi agar radar chart selalu memiliki titik (minimal segi lima)
+    // Ambil total responden final per peran (alumni & perusahaan) untuk persentase
+    $total_alumni = $summary['role_breakdown']['alumni'] ?? 0;
+    $total_perusahaan = $summary['role_breakdown']['perusahaan'] ?? 0;
+
+    // Ambil semua kategori kompetensi agar radar chart selalu memiliki titik
     $stmt_kategori = $pdo->query("SELECT id, nama FROM kategori_kompetensi ORDER BY id ASC");
     $kategori_all = $stmt_kategori->fetchAll();
     
@@ -85,10 +90,10 @@ if ($periode_id) {
         $radar_data['labels'][] = $nama;
     }
 
-    // Menghitung frekuensi opsi yang dipilih yang terhubung ke kategori_kompetensi
+    // Menghitung jumlah responden yang memilih opsi yang terhubung ke kategori_kompetensi
     $sql = "SELECT 
                 k.id, k.nama, u.peran,
-                COUNT(jm.opsi_id) as jumlah_dipilih
+                COUNT(DISTINCT u.id) as jumlah_user_memilih
             FROM jawaban_multi jm
             JOIN jawaban j ON jm.jawaban_id = j.id
             JOIN opsi_pertanyaan o ON jm.opsi_id = o.id
@@ -107,18 +112,24 @@ if ($periode_id) {
     foreach ($hasil_radar as $row) {
         $nama = $row['nama'];
         if (isset($kompetensi_map[$nama])) {
-            $kompetensi_map[$nama][$row['peran']] = (int)$row['jumlah_dipilih'];
+            $kompetensi_map[$nama][$row['peran']] = (int)$row['jumlah_user_memilih'];
         }
     }
 
     foreach ($radar_data['labels'] as $nama) {
-        $radar_data['datasets'][0]['data'][] = $kompetensi_map[$nama]['alumni'];
-        $radar_data['datasets'][1]['data'][] = $kompetensi_map[$nama]['perusahaan'];
+        // Persentase = jumlah user yg memilih kategori ini / total user peran tersebut
+        $pct_alumni = $total_alumni > 0 ? round(($kompetensi_map[$nama]['alumni'] / $total_alumni) * 100, 2) : 0;
+        $pct_perusahaan = $total_perusahaan > 0 ? round(($kompetensi_map[$nama]['perusahaan'] / $total_perusahaan) * 100, 2) : 0;
+
+        $radar_data['datasets'][0]['data'][] = $pct_alumni;
+        $radar_data['datasets'][1]['data'][] = $pct_perusahaan;
         
         $tabel_perbandingan[] = [
             'kompetensi' => $nama,
-            'rata_rata' => $kompetensi_map[$nama]['alumni'] + $kompetensi_map[$nama]['perusahaan'],
-            'jumlah_respon' => '-'
+            'alumni_jumlah' => $kompetensi_map[$nama]['alumni'],
+            'alumni_pct' => $pct_alumni,
+            'perusahaan_jumlah' => $kompetensi_map[$nama]['perusahaan'],
+            'perusahaan_pct' => $pct_perusahaan
         ];
     }
 }
@@ -126,12 +137,16 @@ if ($periode_id) {
 // 3. Top 5 & Bottom 5 Mata Kuliah
 $matkul_ranking = ['top' => [], 'bottom' => []];
 if ($periode_id) {
-    // Ambil rata-rata nilai_skala untuk pertanyaan A1-A5 dari setiap matkul
-    $sql_mk = "SELECT m.kode, m.nama, AVG(j.nilai_skala) as skor
+    // Ambil rata-rata nilai_skala HANYA untuk pertanyaan bertanda 'A1' dari setiap matkul, plus jumlah penilai
+    $sql_mk = "SELECT m.kode, m.nama, m.kelompok, AVG(j.nilai_skala) as skor, COUNT(DISTINCT pg.pengguna_id) as jumlah_penilai
                FROM jawaban j
+               JOIN pertanyaan pt ON j.pertanyaan_id = pt.id
                JOIN mata_kuliah m ON j.mata_kuliah_id = m.id
                JOIN pengisian pg ON j.pengisian_id = pg.id
-               WHERE pg.periode_id = ? AND pg.status = 'final' AND j.mata_kuliah_id IS NOT NULL AND j.nilai_skala IS NOT NULL
+               WHERE pg.periode_id = ? AND pg.status = 'final' 
+                 AND j.mata_kuliah_id IS NOT NULL 
+                 AND j.nilai_skala IS NOT NULL
+                 AND pt.kode = 'A1'
                GROUP BY m.id
                ORDER BY skor DESC";
     $stmt = $pdo->prepare($sql_mk);
@@ -147,26 +162,38 @@ if ($periode_id) {
     }
 }
 
-// 4. Sebaran Profil Lulusan (Alumni)
+// 4. Sebaran Posisi/Profesi & Instansi Alumni
+$alumni_instansi = ['labels' => [], 'data' => []];
 $alumni_profesi = ['labels' => [], 'data' => []];
-$sql_alumni = "SELECT p.instansi, COUNT(p.pengguna_id) as cnt 
+
+$sql_alumni = "SELECT p.instansi, p.posisi_pekerjaan
                FROM profil_pengguna p 
                JOIN pengguna u ON p.pengguna_id = u.id 
-               WHERE u.peran = 'alumni' AND p.instansi IS NOT NULL 
-               GROUP BY p.instansi";
+               WHERE u.peran = 'alumni'";
 $stmt = $pdo->query($sql_alumni);
+$instansi_count = [];
+$profesi_count = [];
+
 foreach ($stmt->fetchAll() as $row) {
-    if (trim($row['instansi']) != '') {
-        $alumni_profesi['labels'][] = $row['instansi'];
-        $alumni_profesi['data'][] = (int)$row['cnt'];
+    $inst = trim(preg_replace('/\s+/', ' ', strtoupper($row['instansi'] ?? '')));
+    $prof = trim(preg_replace('/\s+/', ' ', strtoupper($row['posisi_pekerjaan'] ?? '')));
+    
+    if ($inst != '') {
+        $instansi_count[$inst] = ($instansi_count[$inst] ?? 0) + 1;
+    }
+    if ($prof != '') {
+        $profesi_count[$prof] = ($profesi_count[$prof] ?? 0) + 1;
     }
 }
+
+foreach ($instansi_count as $k => $v) { $alumni_instansi['labels'][] = $k; $alumni_instansi['data'][] = $v; }
+foreach ($profesi_count as $k => $v) { $alumni_profesi['labels'][] = $k; $alumni_profesi['data'][] = $v; }
 
 // 5. Rekapitulasi Ulasan & Masukan
 $ulasan = [];
 if ($periode_id) {
     $sql_ulasan = "
-        SELECT DATE(pg.waktu_submit) as tanggal, u.peran, m.nama as topik, j.teks, j.alasan
+        SELECT DATE_FORMAT(pg.waktu_submit, '%M %Y') as bulan_tahun, u.peran, m.nama as topik, j.teks, j.alasan
         FROM jawaban j
         JOIN pengisian pg ON j.pengisian_id = pg.id
         JOIN pengguna u ON pg.pengguna_id = u.id
@@ -174,7 +201,6 @@ if ($periode_id) {
         WHERE pg.periode_id = ? AND pg.status = 'final'
           AND (j.teks IS NOT NULL OR j.alasan IS NOT NULL)
         ORDER BY pg.waktu_submit DESC
-        LIMIT 50
     ";
     $stmt = $pdo->prepare($sql_ulasan);
     $stmt->execute([$periode_id]);
@@ -182,12 +208,21 @@ if ($periode_id) {
     
     foreach ($hasil_ulasan as $u) {
         $konten = '';
-        if ($u['alasan']) $konten .= "<strong>Alasan Nilai:</strong> " . $u['alasan'] . "<br>";
-        if ($u['teks']) $konten .= $u['teks'];
+        if ($u['alasan']) $konten .= "<strong>Alasan Nilai:</strong> " . escape($u['alasan']) . "<br>";
+        if ($u['teks']) $konten .= "<strong>Saran:</strong> " . escape($u['teks']);
         
+        // Terjemahan sederhana bulan
+        $bln = str_replace(['January','February','March','April','May','June','July','August','September','October','November','December'],
+                           ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'], $u['bulan_tahun']);
+        // R24: Anonimkan peran jika < 3
+        $peran = $u['peran'];
+        if (($summary['role_breakdown'][$peran] ?? 0) < 3) {
+            $peran = 'responden';
+        }
+                           
         $ulasan[] = [
-            'tanggal' => $u['tanggal'],
-            'peran' => ucfirst($u['peran']),
+            'tanggal' => $bln,
+            'peran' => ucfirst($peran),
             'topik' => $u['topik'] ?: 'Umum/Kompetensi',
             'isi' => $konten
         ];
@@ -199,6 +234,7 @@ echo json_encode([
     'radar' => $radar_data,
     'tabel' => $tabel_perbandingan,
     'matkul_ranking' => $matkul_ranking,
+    'alumni_instansi' => $alumni_instansi,
     'alumni_profesi' => $alumni_profesi,
     'ulasan' => $ulasan
 ]);

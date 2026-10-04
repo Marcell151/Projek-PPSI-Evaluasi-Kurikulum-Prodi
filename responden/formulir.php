@@ -128,6 +128,10 @@ require_once '../includes/header.php';
                     elseif ($user_role === 'dosen') echo "Nilai berdasarkan mata kuliah yang Anda kenal atau ampu.";
                     ?>
                 </div>
+                <div class="mt-2 text-sm text-brand-700 bg-brand-50 px-3 py-2 rounded-lg border border-brand-200 inline-flex items-center gap-2">
+                    <i class="ph ph-shield-check text-lg"></i>
+                    <strong>Kerahasiaan Terjamin:</strong> Jawaban Anda ditampilkan kepada Program Studi tanpa nama.
+                </div>
             </div>
 
             <!-- Panel Filter -->
@@ -588,16 +592,19 @@ document.addEventListener('change', function(e) {
 });
 
 let saveTimeout;
+let autoSaveInterval = setInterval(() => saveDraft(), 30000);
+
 function attachAutoSaveEvents() {
     document.querySelectorAll('.auto-save').forEach(el => {
-        el.removeEventListener('input', queueSave); el.removeEventListener('change', queueSave);
+        el.removeEventListener('input', queueSave); el.removeEventListener('change', saveImmediate);
         if (el.tagName === 'TEXTAREA' || el.type === 'text') el.addEventListener('input', queueSave);
-        else el.addEventListener('change', queueSave);
+        else el.addEventListener('change', saveImmediate);
     });
 }
-function queueSave() { clearTimeout(saveTimeout); saveTimeout = setTimeout(() => saveDraft(), 30000); }
+function queueSave() { clearTimeout(saveTimeout); saveTimeout = setTimeout(() => saveDraft(), 800); }
+function saveImmediate() { checkConditionalLogic(); saveDraft(); }
+
 document.addEventListener('focusout', (e) => { if (e.target.classList.contains('auto-save')) saveDraft(); });
-document.addEventListener('change', function(e) { if (e.target.type === 'radio' || e.target.type === 'checkbox') { checkConditionalLogic(); saveDraft(); } });
 
 function saveDraft(tabId = null) {
     clearTimeout(saveTimeout);

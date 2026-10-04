@@ -4,32 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= isset($page_title) ? escape($page_title) . ' - ' : '' ?>Evaluasi Kurikulum</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            500: '#0ca14e',
-                            600: '#09813e',
-                            700: '#15803d',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="<?= base_url('assets/css/style.css?v=' . filemtime(__DIR__ . '/../assets/css/style.css')) ?>">
+    <script src="<?= base_url('assets/vendor/phosphor.js') ?>"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f9fafb; color: #111827; }
     </style>
@@ -73,10 +49,12 @@
                                     </div>
                                 </div>
                             </div>
+                            <a href="<?= base_url('admin/tiket.php') ?>" class="text-gray-600 hover:text-brand-500 font-medium transition-colors"><i class="ph ph-lifebuoy mr-1"></i>Tiket</a>
                         <?php else: ?>
                             <a href="<?= base_url('responden/beranda.php') ?>" class="text-gray-600 hover:text-brand-500 font-medium transition-colors"><i class="ph ph-house mr-1"></i>Beranda</a>
                             <a href="<?= base_url('responden/formulir.php') ?>" class="text-gray-600 hover:text-brand-500 font-medium transition-colors"><i class="ph ph-note-pencil mr-1"></i>Formulir</a>
                             <a href="<?= base_url('responden/riwayat.php') ?>" class="text-gray-600 hover:text-brand-500 font-medium transition-colors"><i class="ph ph-clock-counter-clockwise mr-1"></i>Riwayat</a>
+                            <a href="<?= base_url('responden/tiket.php') ?>" class="text-gray-600 hover:text-brand-500 font-medium transition-colors"><i class="ph ph-lifebuoy mr-1"></i>Bantuan</a>
                         <?php endif; ?>
                         
                         <div class="relative group border-l border-gray-200 pl-6 ml-2">
@@ -126,10 +104,12 @@
                         <p class="px-3 py-2 mt-2 text-xs font-semibold text-gray-500 uppercase">Kuesioner</p>
                         <a href="<?= base_url('admin/kuesioner/matkul.php') ?>" class="block pl-6 pr-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Bank Mata Kuliah</a>
                         <a href="<?= base_url('admin/kuesioner/pertanyaan.php') ?>" class="block pl-6 pr-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Bank Pertanyaan</a>
+                        <a href="<?= base_url('admin/tiket.php') ?>" class="block px-3 py-2 mt-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Manajemen Tiket</a>
                     <?php else: ?>
                         <a href="<?= base_url('responden/beranda.php') ?>" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Beranda</a>
                         <a href="<?= base_url('responden/formulir.php') ?>" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Formulir</a>
                         <a href="<?= base_url('responden/riwayat.php') ?>" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Riwayat</a>
+                        <a href="<?= base_url('responden/tiket.php') ?>" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Bantuan (Tiket)</a>
                     <?php endif; ?>
                     <div class="border-t border-gray-200 mt-4 pt-4 pb-2">
                         <div class="px-3">

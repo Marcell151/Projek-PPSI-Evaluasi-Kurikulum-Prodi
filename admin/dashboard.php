@@ -27,8 +27,8 @@ $page_title = 'Dashboard Admin';
 require_once '../includes/header.php';
 ?>
 
-<!-- Chart.js via CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js -->
+<script src="<?= base_url('assets/vendor/chart.js') ?>"></script>
 
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -116,17 +116,18 @@ require_once '../includes/header.php';
     <!-- Tabel Perbandingan -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h3 class="font-bold text-gray-900 mb-1 flex items-center gap-2"><i class="ph ph-table text-brand-500 text-xl"></i> Tabel Perbandingan Kompetensi</h3>
-        <p class="text-sm text-gray-500 mb-6">Detail rata-rata skala (1-5).</p>
+        <p class="text-sm text-gray-500 mb-6">Persentase pilihan responden.</p>
         
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-gray-50 border-b border-gray-200 text-sm text-gray-500 uppercase tracking-wider">
-                        <th class="px-4 py-3 font-medium">Kategori Kompetensi</th>
-                        <th class="px-4 py-3 font-medium text-center">Jumlah Dipilih</th>
+                    <tr class="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 font-medium">Kategori</th>
+                        <th class="px-4 py-3 font-medium text-center">Alumni<br><span class="text-gray-400">(Jml & %)</span></th>
+                        <th class="px-4 py-3 font-medium text-center">Perusahaan<br><span class="text-gray-400">(Jml & %)</span></th>
                     </tr>
                 </thead>
-                <tbody id="tabel-kompetensi" class="divide-y divide-gray-100">
+                <tbody id="tabel-kompetensi" class="divide-y divide-gray-100 text-sm">
                     <!-- Data dimuat via AJAX -->
                 </tbody>
             </table>
@@ -159,15 +160,25 @@ require_once '../includes/header.php';
         </div>
     </div>
 
-    <!-- Sebaran Profesi Alumni -->
+    <!-- Sebaran Profesi & Instansi Alumni -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 class="font-bold text-gray-900 mb-1 flex items-center gap-2"><i class="ph ph-briefcase text-brand-500 text-xl"></i> Sebaran Instansi Alumni</h3>
-        <p class="text-xs text-gray-500 mb-4">Berdasarkan profil akun alumni.</p>
+        <h3 class="font-bold text-gray-900 mb-1 flex items-center gap-2"><i class="ph ph-briefcase text-brand-500 text-xl"></i> Sebaran Alumni</h3>
+        <p class="text-xs text-gray-500 mb-4">Berdasarkan profil posisi dan instansi.</p>
         
-        <div class="relative h-64 w-full flex justify-center items-center">
-            <canvas id="pieChart"></canvas>
-            <div id="pie-empty" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 hidden">
-                <p class="text-gray-500 font-medium text-sm"><i class="ph ph-warning-circle"></i> Belum ada data instansi.</p>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="relative h-48 w-full flex flex-col justify-center items-center">
+                <span class="text-xs font-semibold text-gray-600 mb-2">Posisi / Profesi</span>
+                <canvas id="pieChartProfesi"></canvas>
+                <div id="pie-profesi-empty" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 hidden mt-6">
+                    <p class="text-gray-400 font-medium text-xs">Belum ada data</p>
+                </div>
+            </div>
+            <div class="relative h-48 w-full flex flex-col justify-center items-center">
+                <span class="text-xs font-semibold text-gray-600 mb-2">Instansi</span>
+                <canvas id="pieChartInstansi"></canvas>
+                <div id="pie-instansi-empty" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 hidden mt-6">
+                    <p class="text-gray-400 font-medium text-xs">Belum ada data</p>
+                </div>
             </div>
         </div>
     </div>
@@ -303,8 +314,9 @@ function loadDashboardData(periodeId) {
                         scales: {
                             r: {
                                 angleLines: { display: true },
-                                suggestedMin: 0,
-                                ticks: { stepSize: 1 }
+                                min: 0,
+                                max: 100,
+                                ticks: { stepSize: 20, callback: function(value) { return value + '%'; } }
                             }
                         },
                         plugins: { legend: { position: 'bottom' } }
@@ -316,7 +328,7 @@ function loadDashboardData(periodeId) {
             const tbody = document.getElementById('tabel-kompetensi');
             tbody.innerHTML = '';
             if (data.tabel.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="2" class="px-4 py-8 text-center text-gray-500">Belum ada data evaluasi</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" class="px-4 py-8 text-center text-gray-500">Belum ada data evaluasi</td></tr>`;
             } else {
                 data.tabel.forEach(row => {
                     const tr = document.createElement('tr');
@@ -324,9 +336,12 @@ function loadDashboardData(periodeId) {
                     tr.innerHTML = `
                         <td class="px-4 py-4 font-medium text-gray-900">${row.kompetensi}</td>
                         <td class="px-4 py-4 text-center">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-brand-50 text-brand-700">
-                                ${row.rata_rata}
-                            </span>
+                            <span class="font-bold text-blue-600">${row.alumni_jumlah}</span>
+                            <span class="text-xs text-gray-500 ml-1">(${row.alumni_pct}%)</span>
+                        </td>
+                        <td class="px-4 py-4 text-center">
+                            <span class="font-bold text-green-600">${row.perusahaan_jumlah}</span>
+                            <span class="text-xs text-gray-500 ml-1">(${row.perusahaan_pct}%)</span>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -343,47 +358,70 @@ function loadDashboardData(periodeId) {
                 bottomList.innerHTML = '<li class="text-sm text-gray-500">Belum ada penilaian.</li>';
             } else {
                 data.matkul_ranking.top.forEach((m, idx) => {
+                    const limited = m.jumlah_penilai < 3 ? '<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-2">Data terbatas</span>' : '';
+                    const badge = `<span class="text-[10px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded ml-2 uppercase">${m.kelompok}</span>`;
                     topList.innerHTML += `<li class="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
-                        <span class="text-sm font-medium text-gray-800"><span class="text-gray-400 mr-2">#${idx+1}</span> ${m.nama}</span>
-                        <span class="text-sm font-bold text-green-600">${parseFloat(m.skor).toFixed(2)}</span>
+                        <span class="text-sm font-medium text-gray-800"><span class="text-gray-400 mr-2">#${idx+1}</span> ${m.nama} ${badge} ${limited}</span>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-green-600">${parseFloat(m.skor).toFixed(2)}</div>
+                            <div class="text-[10px] text-gray-500">${m.jumlah_penilai} penilai</div>
+                        </div>
                     </li>`;
                 });
                 data.matkul_ranking.bottom.forEach((m, idx) => {
+                    const limited = m.jumlah_penilai < 3 ? '<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-2">Data terbatas</span>' : '';
+                    const badge = `<span class="text-[10px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded ml-2 uppercase">${m.kelompok}</span>`;
                     bottomList.innerHTML += `<li class="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
-                        <span class="text-sm font-medium text-gray-800"><span class="text-gray-400 mr-2">#${idx+1}</span> ${m.nama}</span>
-                        <span class="text-sm font-bold text-red-600">${parseFloat(m.skor).toFixed(2)}</span>
+                        <span class="text-sm font-medium text-gray-800"><span class="text-gray-400 mr-2">#${idx+1}</span> ${m.nama} ${badge} ${limited}</span>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-red-600">${parseFloat(m.skor).toFixed(2)}</div>
+                            <div class="text-[10px] text-gray-500">${m.jumlah_penilai} penilai</div>
+                        </div>
                     </li>`;
                 });
             }
 
-            // Update Pie Chart Alumni
-            const ctxPie = document.getElementById('pieChart').getContext('2d');
-            const emptyPie = document.getElementById('pie-empty');
+            // Update Pie Chart Profesi
+            const ctxProfesi = document.getElementById('pieChartProfesi').getContext('2d');
+            const emptyProfesi = document.getElementById('pie-profesi-empty');
             
-            if (data.alumni_profesi.labels.length === 0) {
-                emptyPie.classList.remove('hidden');
-                if (window.pieChartInstance) window.pieChartInstance.destroy();
-            } else {
-                emptyPie.classList.add('hidden');
-                if (window.pieChartInstance) window.pieChartInstance.destroy();
-                
-                window.pieChartInstance = new Chart(ctxPie, {
-                    type: 'doughnut',
-                    data: {
-                        labels: data.alumni_profesi.labels,
-                        datasets: [{
-                            data: data.alumni_profesi.data,
-                            backgroundColor: ['#0CA14E', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#14b8a6', '#f43f5e']
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } } },
-                        cutout: '70%'
-                    }
-                });
+            let profLabels = data.alumni_profesi.labels;
+            let profData = data.alumni_profesi.data;
+            let profColors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#14b8a6'];
+            
+            if (profLabels.length === 0) {
+                profLabels = ['Belum ada data'];
+                profData = [1];
+                profColors = ['#e5e7eb']; // abu-abu
             }
+            emptyProfesi.classList.add('hidden');
+            if (window.pieChartProfesiInstance) window.pieChartProfesiInstance.destroy();
+            window.pieChartProfesiInstance = new Chart(ctxProfesi, {
+                type: 'doughnut',
+                data: { labels: profLabels, datasets: [{ data: profData, backgroundColor: profColors }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '60%' }
+            });
+            
+            // Update Pie Chart Instansi
+            const ctxInstansi = document.getElementById('pieChartInstansi').getContext('2d');
+            const emptyInstansi = document.getElementById('pie-instansi-empty');
+            
+            let instLabels = data.alumni_instansi.labels;
+            let instData = data.alumni_instansi.data;
+            let instColors = ['#0CA14E', '#f43f5e', '#6366f1', '#ec4899', '#84cc16'];
+            
+            if (instLabels.length === 0) {
+                instLabels = ['Belum ada data'];
+                instData = [1];
+                instColors = ['#e5e7eb']; // abu-abu
+            }
+            emptyInstansi.classList.add('hidden');
+            if (window.pieChartInstansiInstance) window.pieChartInstansiInstance.destroy();
+            window.pieChartInstansiInstance = new Chart(ctxInstansi, {
+                type: 'doughnut',
+                data: { labels: instLabels, datasets: [{ data: instData, backgroundColor: instColors }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '60%' }
+            });
             
             // Update Tabel Ulasan
             ulasanData = data.ulasan || [];

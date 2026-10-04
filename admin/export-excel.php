@@ -25,7 +25,7 @@ if (file_exists('../vendor/autoload.php')) {
     $sheet->setTitle('Data Mentah Jawaban');
     
     // Header
-    $headers = ['ID Pengisian', 'Nama Responden', 'Email', 'Peran', 'Kategori Sasaran', 'Waktu Pengisian', 'Jenis Pertanyaan', 'Kode Matkul', 'Teks Pertanyaan', 'Nilai Skala', 'Opsi Terpilih', 'Alasan / Teks Esai'];
+    $headers = ['Kode Responden', 'Peran', 'Kategori Sasaran', 'Waktu Pengisian', 'Jenis Pertanyaan', 'Kode Matkul', 'Teks Pertanyaan', 'Nilai Skala', 'Opsi Terpilih', 'Alasan / Teks Esai'];
     $col = 'A';
     foreach ($headers as $h) {
         $sheet->setCellValue($col . '1', $h);
@@ -37,7 +37,8 @@ if (file_exists('../vendor/autoload.php')) {
     // Data
     $sql = "SELECT j.*, p.teks as pertanyaan, p.bagian, m.kode as kode_matkul, 
             COALESCE(o.teks_opsi, multi.teks_opsi_multi) as teks_opsi_final,
-            pg.waktu_submit, u.nama, u.email, u.peran
+            pg.waktu_submit, u.peran,
+            SUBSTRING(MD5(CONCAT(u.id, '-', pg.periode_id, '-evaluasi')), 1, 8) as kode_responden
             FROM jawaban j
             JOIN pertanyaan p ON j.pertanyaan_id = p.id
             LEFT JOIN mata_kuliah m ON j.mata_kuliah_id = m.id
@@ -58,22 +59,20 @@ if (file_exists('../vendor/autoload.php')) {
     
     $row = 2;
     while ($d = $stmt->fetch()) {
-        $sheet->setCellValue('A'.$row, $d['pengisian_id']);
-        $sheet->setCellValue('B'.$row, $d['nama']);
-        $sheet->setCellValue('C'.$row, $d['email']);
-        $sheet->setCellValue('D'.$row, $d['peran']);
-        $sheet->setCellValue('E'.$row, $d['bagian']);
-        $sheet->setCellValue('F'.$row, $d['waktu_submit']);
-        $sheet->setCellValue('G'.$row, $d['kode_matkul'] ? 'Mata Kuliah' : 'Kompetensi');
-        $sheet->setCellValue('H'.$row, $d['kode_matkul'] ?? '-');
-        $sheet->setCellValue('I'.$row, $d['pertanyaan']);
-        $sheet->setCellValue('J'.$row, $d['nilai_skala'] ?? '');
-        $sheet->setCellValue('K'.$row, $d['teks_opsi_final'] ?? '');
-        $sheet->setCellValue('L'.$row, $d['teks'] ?? $d['alasan'] ?? '');
+        $sheet->setCellValue('A'.$row, $d['kode_responden']);
+        $sheet->setCellValue('B'.$row, $d['peran']);
+        $sheet->setCellValue('C'.$row, $d['bagian']);
+        $sheet->setCellValue('D'.$row, $d['waktu_submit']);
+        $sheet->setCellValue('E'.$row, $d['kode_matkul'] ? 'Mata Kuliah' : 'Kompetensi');
+        $sheet->setCellValue('F'.$row, $d['kode_matkul'] ?? '-');
+        $sheet->setCellValue('G'.$row, $d['pertanyaan']);
+        $sheet->setCellValue('H'.$row, $d['nilai_skala'] ?? '');
+        $sheet->setCellValue('I'.$row, $d['teks_opsi_final'] ?? '');
+        $sheet->setCellValue('J'.$row, $d['teks'] ?? $d['alasan'] ?? '');
         $row++;
     }
     
-    foreach (range('A', 'L') as $columnID) {
+    foreach (range('A', 'J') as $columnID) {
         $sheet->getColumnDimension($columnID)->setAutoSize(true);
     }
     
@@ -91,11 +90,12 @@ else {
     header('Content-Disposition: attachment; filename="'. $filename .'.csv"');
     
     $output = fopen('php://output', 'w');
-    fputcsv($output, ['ID Pengisian', 'Nama Responden', 'Email', 'Peran', 'Kategori Sasaran', 'Waktu Pengisian', 'Jenis Pertanyaan', 'Kode Matkul', 'Teks Pertanyaan', 'Nilai Skala', 'Opsi Terpilih', 'Alasan / Teks Esai']);
+    fputcsv($output, ['Kode Responden', 'Peran', 'Kategori Sasaran', 'Waktu Pengisian', 'Jenis Pertanyaan', 'Kode Matkul', 'Teks Pertanyaan', 'Nilai Skala', 'Opsi Terpilih', 'Alasan / Teks Esai']);
     
     $sql = "SELECT j.*, p.teks as pertanyaan, p.bagian, m.kode as kode_matkul, 
             COALESCE(o.teks_opsi, multi.teks_opsi_multi) as teks_opsi_final,
-            pg.waktu_submit, u.nama, u.email, u.peran
+            pg.waktu_submit, u.peran,
+            SUBSTRING(MD5(CONCAT(u.id, '-', pg.periode_id, '-evaluasi')), 1, 8) as kode_responden
             FROM jawaban j
             JOIN pertanyaan p ON j.pertanyaan_id = p.id
             LEFT JOIN mata_kuliah m ON j.mata_kuliah_id = m.id
@@ -116,9 +116,7 @@ else {
     
     while ($d = $stmt->fetch()) {
         fputcsv($output, [
-            $d['pengisian_id'],
-            $d['nama'],
-            $d['email'],
+            $d['kode_responden'],
             $d['peran'],
             $d['bagian'],
             $d['waktu_submit'],

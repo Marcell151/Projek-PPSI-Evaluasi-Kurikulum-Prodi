@@ -37,6 +37,13 @@ try {
         throw new Exception("Pengisian tidak valid atau sudah disubmit.");
     }
 
+    $stmt_periode = $pdo->prepare("SELECT status FROM periode_evaluasi WHERE id = ?");
+    $stmt_periode->execute([$pengisian['periode_id']]);
+    $periode_status = $stmt_periode->fetchColumn();
+    if ($periode_status !== 'buka') {
+        throw new Exception("Periode evaluasi sudah ditutup.");
+    }
+
     // Update tab_terakhir jika dikirim
     if ($tab_terakhir) {
         $stmt = $pdo->prepare("UPDATE pengisian SET tab_terakhir = ? WHERE id = ?");

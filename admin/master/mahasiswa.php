@@ -65,6 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } elseif ($action === 'impor_excel') {
+        $raw_default_password = $_POST['default_password'] ?? '123456';
+        $default_password = password_hash($raw_default_password, PASSWORD_DEFAULT);
+        
         // Logika unggah file Excel
         if (isset($_FILES['file_excel']) && $_FILES['file_excel']['error'] === UPLOAD_ERR_OK) {
             $file = $_FILES['file_excel']['tmp_name'];
@@ -217,6 +220,10 @@ require_once '../../includes/header.php';
                     </div>
                     <form action="" method="POST" enctype="multipart/form-data" class="space-y-4">
                         <?= csrf_field() ?> <input type="hidden" name="action" value="impor_excel">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kata Sandi Default (Bawaan)</label>
+                            <input type="text" name="default_password" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none" value="123456" required>
+                        </div>
                         <div><input type="file" name="file_excel" accept=".xlsx,.xls,.csv" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" required></div>
                         <div class="pt-2"><button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex justify-center items-center gap-2"><i class="ph ph-upload-simple"></i> Unggah & Impor</button></div>
                     </form>

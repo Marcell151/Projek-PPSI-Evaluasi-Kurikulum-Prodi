@@ -97,7 +97,18 @@ $sql_ulasan = "
 ";
 $stmt = $pdo->prepare($sql_ulasan);
 $stmt->execute([$periode_id]);
-$ulasan = $stmt->fetchAll();
+$ulasan_mentah = $stmt->fetchAll();
+
+$ulasan = [];
+foreach ($ulasan_mentah as $u) {
+    $peran = $u['peran'];
+    if (($summary[$peran] ?? 0) < 3) {
+        $peran = 'responden';
+    }
+    $u['peran_final'] = $peran;
+    $ulasan[] = $u;
+}
+
 
 ?>
 <!DOCTYPE html>
@@ -106,8 +117,8 @@ $ulasan = $stmt->fetchAll();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Evaluasi Kurikulum - <?= escape($periode['tahun_akademik']) ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="<?= base_url('assets/css/style.css') ?>">
+    <script src="<?= base_url('assets/vendor/chart.js') ?>"></script>
     <style>
         @media print {
             body { font-size: 12pt; background: #fff !important; }
@@ -242,7 +253,7 @@ $ulasan = $stmt->fetchAll();
                         <?php foreach ($ulasan as $u): ?>
                             <tr>
                                 <td class="border border-gray-200 px-4 py-2 text-sm whitespace-nowrap"><?= escape($u['tanggal']) ?></td>
-                                <td class="border border-gray-200 px-4 py-2 text-sm font-medium"><?= escape(ucfirst($u['peran'])) ?></td>
+                                <td class="border border-gray-200 px-4 py-2 text-sm font-medium"><?= escape(ucfirst($u['peran_final'])) ?></td>
                                 <td class="border border-gray-200 px-4 py-2 text-sm"><?= escape($u['topik'] ?: 'Umum/Kompetensi') ?></td>
                                 <td class="border border-gray-200 px-4 py-2 text-sm">
                                     <?php if ($u['alasan']): ?><strong>Alasan Nilai:</strong> <?= escape($u['alasan']) ?><br><?php endif; ?>

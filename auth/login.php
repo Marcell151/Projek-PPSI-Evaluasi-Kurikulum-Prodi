@@ -36,8 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_role'] = $user['peran'];
         $_SESSION['user_name'] = $user['nama'];
+        $_SESSION['wajib_ganti_sandi'] = $user['wajib_ganti_sandi'];
         
-        if ($user['peran'] === 'admin') {
+        if ($user['wajib_ganti_sandi']) {
+            redirect('auth/profil.php');
+        } elseif ($user['peran'] === 'admin') {
             redirect('admin/dashboard.php');
         } else {
             redirect('responden/beranda.php');
