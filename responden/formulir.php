@@ -128,10 +128,6 @@ require_once '../includes/header.php';
                     elseif ($user_role === 'dosen') echo "Nilai berdasarkan mata kuliah yang Anda kenal atau ampu.";
                     ?>
                 </div>
-                <div class="mt-2 text-sm text-brand-700 bg-brand-50 px-3 py-2 rounded-lg border border-brand-200 inline-flex items-center gap-2">
-                    <i class="ph ph-shield-check text-lg"></i>
-                    <strong>Kerahasiaan Terjamin:</strong> Jawaban Anda ditampilkan kepada Program Studi tanpa nama.
-                </div>
             </div>
 
             <!-- Panel Filter -->
@@ -243,8 +239,9 @@ require_once '../includes/header.php';
                                     </label>
                                 <?php endfor; ?>
                             </div>
+                            <?php if ($p['alasan_jika_rendah'] == 1): ?>
                             <textarea name="komp_<?= $p['id'] ?>_alasan" class="w-full mt-3 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm auto-save alasan-skala" placeholder="Mohon berikan alasan untuk nilai yang rendah (Wajib jika nilai 1 atau 2, min 10 karakter)" rows="2" style="display: <?= in_array($jwb['nilai_skala'] ?? '', [1,2]) ? 'block' : 'none' ?>;" minlength="10"><?= escape($jwb['alasan'] ?? '') ?></textarea>
-                            
+                            <?php endif; ?>
                         <?php elseif ($p['tipe'] === 'pilihan_ganda' || $p['tipe'] === 'pilihan_ganda_banyak'): ?>
                             <?php $is_multi = ($p['tipe'] === 'pilihan_ganda_banyak'); ?>
                             <?php $selected_opsi = $jwb ? ($is_multi && $jwb['multi_opsi'] ? explode(',', $jwb['multi_opsi']) : [$jwb['opsi_id']]) : []; ?>
@@ -310,7 +307,9 @@ require_once '../includes/header.php';
                                 </label>
                             <?php endfor; ?>
                         </div>
+                        <?php if ($p['alasan_jika_rendah'] == 1): ?>
                         <textarea name="matkul_{id}_<?= $p['id'] ?>_alasan" class="w-full mt-3 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 text-sm auto-save mk-alasan alasan-skala" placeholder="Mohon berikan alasan (Wajib jika nilai 1 atau 2, min 10 karakter)" rows="2" style="display:none;" minlength="10"></textarea>
+                        <?php endif; ?>
                     
                     <?php elseif ($p['tipe'] === 'pilihan_ganda' || $p['tipe'] === 'pilihan_ganda_banyak'): ?>
                         <?php $is_multi = ($p['tipe'] === 'pilihan_ganda_banyak'); ?>

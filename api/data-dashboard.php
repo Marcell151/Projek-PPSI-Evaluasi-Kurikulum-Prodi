@@ -7,8 +7,14 @@ require_once '../includes/auth.php';
 
 header('Content-Type: application/json');
 
-if (!is_logged_in() || $_SESSION['user_role'] !== 'admin') {
+if (!is_logged_in()) {
+    http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
+if ($_SESSION['user_role'] !== 'admin') {
+    http_response_code(403);
+    echo json_encode(['error' => 'Forbidden']);
     exit;
 }
 
@@ -90,12 +96,12 @@ if ($periode_id) {
         $radar_data['labels'][] = $nama;
     }
 
-    // Menghitung jumlah responden yang memilih opsi yang terhubung ke kategori_kompetensi
     $sql = "SELECT 
                 k.id, k.nama, u.peran,
-                COUNT(DISTINCT u.id) as jumlah_user_memilih
+                COUNT(jm.opsi_id) as jumlah_user_memilih
             FROM jawaban_multi jm
             JOIN jawaban j ON jm.jawaban_id = j.id
+            JOIN pertanyaan pt ON j.pertanyaan_id = pt.id
             JOIN opsi_pertanyaan o ON jm.opsi_id = o.id
             JOIN kategori_kompetensi k ON o.kategori_kompetensi_id = k.id
             JOIN pengisian pg ON j.pengisian_id = pg.id
@@ -103,23 +109,27 @@ if ($periode_id) {
             WHERE pg.periode_id = ? 
               AND pg.status = 'final' 
               AND u.peran IN ('alumni', 'perusahaan')
+              AND pt.penanda = 'WARNA_PRODI'
             GROUP BY k.id, k.nama, u.peran";
             
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$periode_id]);
     $hasil_radar = $stmt->fetchAll();
 
+    $total_pilihan_alumni = 0;
+    $total_pilihan_perusahaan = 0;
     foreach ($hasil_radar as $row) {
         $nama = $row['nama'];
         if (isset($kompetensi_map[$nama])) {
             $kompetensi_map[$nama][$row['peran']] = (int)$row['jumlah_user_memilih'];
+            if ($row['peran'] === 'alumni') $total_pilihan_alumni += (int)$row['jumlah_user_memilih'];
+            if ($row['peran'] === 'perusahaan') $total_pilihan_perusahaan += (int)$row['jumlah_user_memilih'];
         }
     }
 
     foreach ($radar_data['labels'] as $nama) {
-        // Persentase = jumlah user yg memilih kategori ini / total user peran tersebut
-        $pct_alumni = $total_alumni > 0 ? round(($kompetensi_map[$nama]['alumni'] / $total_alumni) * 100, 2) : 0;
-        $pct_perusahaan = $total_perusahaan > 0 ? round(($kompetensi_map[$nama]['perusahaan'] / $total_perusahaan) * 100, 2) : 0;
+        $pct_alumni = $total_pilihan_alumni > 0 ? round(($kompetensi_map[$nama]['alumni'] / $total_pilihan_alumni) * 100, 2) : 0;
+        $pct_perusahaan = $total_pilihan_perusahaan > 0 ? round(($kompetensi_map[$nama]['perusahaan'] / $total_pilihan_perusahaan) * 100, 2) : 0;
 
         $radar_data['datasets'][0]['data'][] = $pct_alumni;
         $radar_data['datasets'][1]['data'][] = $pct_perusahaan;
@@ -137,7 +147,7 @@ if ($periode_id) {
 // 3. Top 5 & Bottom 5 Mata Kuliah
 $matkul_ranking = ['top' => [], 'bottom' => []];
 if ($periode_id) {
-    // Ambil rata-rata nilai_skala HANYA untuk pertanyaan bertanda 'A1' dari setiap matkul, plus jumlah penilai
+    // Ambil rata-rata nilai_skala HANYA untuk pertanyaan bertanda untuk_peringkat dari setiap matkul, plus jumlah penilai
     $sql_mk = "SELECT m.kode, m.nama, m.kelompok, AVG(j.nilai_skala) as skor, COUNT(DISTINCT pg.pengguna_id) as jumlah_penilai
                FROM jawaban j
                JOIN pertanyaan pt ON j.pertanyaan_id = pt.id
@@ -146,7 +156,7 @@ if ($periode_id) {
                WHERE pg.periode_id = ? AND pg.status = 'final' 
                  AND j.mata_kuliah_id IS NOT NULL 
                  AND j.nilai_skala IS NOT NULL
-                 AND pt.kode = 'A1'
+                 AND pt.untuk_peringkat = 1
                GROUP BY m.id
                ORDER BY skor DESC";
     $stmt = $pdo->prepare($sql_mk);
