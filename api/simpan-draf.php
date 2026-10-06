@@ -7,8 +7,19 @@ require_once '../includes/csrf.php';
 
 header('Content-Type: application/json');
 
-if (!is_logged_in() || $_SESSION['user_role'] === 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+if (!is_logged_in()) {
+    http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+if ($_SESSION['user_role'] === 'admin') {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Forbidden']);
+    exit;
+}
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method Not Allowed']);
     exit;
 }
 

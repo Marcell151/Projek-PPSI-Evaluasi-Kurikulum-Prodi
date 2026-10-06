@@ -6,8 +6,17 @@ require_once '../includes/helpers.php';
 require_once '../includes/auth.php';
 require_once '../includes/csrf.php';
 
-if (!is_logged_in() || $_SESSION['user_role'] === 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    redirect('auth/login.php');
+if (!is_logged_in()) {
+    http_response_code(401);
+    exit('Unauthorized');
+}
+if ($_SESSION['user_role'] === 'admin') {
+    http_response_code(403);
+    exit('Forbidden');
+}
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method Not Allowed');
 }
 
 if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {

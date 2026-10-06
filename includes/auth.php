@@ -2,7 +2,7 @@
 // includes/auth.php
 
 function is_logged_in() {
-    return isset($_SESSION['user_id']);
+    return isset($_SESSION['user_id']) && isset($_SESSION['user_role']);
 }
 
 function require_login() {
@@ -22,12 +22,8 @@ function require_login() {
 function require_role($role) {
     require_login();
     if ($_SESSION['user_role'] !== $role) {
-        // Jika tidak sesuai peran, arahkan ke beranda atau dashboard masing-masing
-        if ($_SESSION['user_role'] === 'admin') {
-            redirect('admin/dashboard.php');
-        } else {
-            redirect('responden/beranda.php');
-        }
+        http_response_code(403);
+        exit('Forbidden');
     }
 }
 ?>

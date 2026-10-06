@@ -45,6 +45,8 @@
                                 <div class="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                                     <div class="py-2">
                                         <a href="<?= base_url('admin/kuesioner/matkul.php') ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-500">Bank Mata Kuliah</a>
+                                        <a href="<?= base_url('admin/kuesioner/bahan_kajian.php') ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-500">Bahan Kajian</a>
+                                        <a href="<?= base_url('admin/kuesioner/kategori_kompetensi.php') ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-500">Kategori Kompetensi</a>
                                         <a href="<?= base_url('admin/kuesioner/pertanyaan.php') ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-500">Bank Pertanyaan</a>
                                     </div>
                                 </div>
@@ -103,6 +105,8 @@
                         <a href="<?= base_url('admin/master/perusahaan.php') ?>" class="block pl-6 pr-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Perusahaan</a>
                         <p class="px-3 py-2 mt-2 text-xs font-semibold text-gray-500 uppercase">Kuesioner</p>
                         <a href="<?= base_url('admin/kuesioner/matkul.php') ?>" class="block pl-6 pr-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Bank Mata Kuliah</a>
+                        <a href="<?= base_url('admin/kuesioner/bahan_kajian.php') ?>" class="block pl-6 pr-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Bahan Kajian</a>
+                        <a href="<?= base_url('admin/kuesioner/kategori_kompetensi.php') ?>" class="block pl-6 pr-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Kategori Kompetensi</a>
                         <a href="<?= base_url('admin/kuesioner/pertanyaan.php') ?>" class="block pl-6 pr-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Bank Pertanyaan</a>
                         <a href="<?= base_url('admin/tiket.php') ?>" class="block px-3 py-2 mt-2 rounded-md text-base font-medium text-gray-700 hover:text-brand-500 hover:bg-gray-50">Manajemen Tiket</a>
                     <?php else: ?>
